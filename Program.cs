@@ -163,7 +163,7 @@ namespace SocketTcpClient
                     flagChange = false;
                     GetKey();
                 }
-                ServerAnswerAsync(i);
+                GetServerAnswerAsync(i);
             }
         }
         static void WaitingForAllAnswers(int leftBorder, int rightBorder)       //Отслеживаем получение ВСЕЙ информации
@@ -176,7 +176,7 @@ namespace SocketTcpClient
                 {
                     Thread.Sleep(100);
                     int temp = errors.Pop();
-                    ServerAnswerAsync(temp);
+                    GetServerAnswerAsync(temp);
                 }
                 for (int i = leftBorder; i < rightBorder; ++i)
                     if (answerRecived[i]) numberOfRequestsExecuted++;
@@ -202,7 +202,7 @@ namespace SocketTcpClient
                 socket.Dispose();
             }
         }
-        static async void ServerAnswerAsync(int number)
+        static async void GetServerAnswerAsync(int number)
         {
             await Task.Run(() => GetServerAnswer(number));
         }
