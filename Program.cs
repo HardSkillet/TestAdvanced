@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -11,13 +11,13 @@ namespace SocketTcpClient
 {
     class Program
     {
-        static int numberOfRequestsExecuted = 0;
+        static int numberOfRequestsExecuted = 0;      //Количество полученных "верных" ответов
         static int port = 2013;
         static string address = "88.212.241.115";    //Порт и IP-адресс
-        static StringBuilder key = null;
+        static StringBuilder key = null;                //Ключ
         static IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse(address), port);
-        static bool flagChange = true;
-        static bool flagKey = false;
+        static bool flagChange = true;                  
+        static bool flagKey = false;                          //Флаги, показывающие изменение ключа
         static Stack<int> errors; // Стек для отлова ошибок
         const int n = 2018;
         static bool[] answerRecived = new bool[n];         //Получили значение от сервера 
@@ -25,22 +25,22 @@ namespace SocketTcpClient
         static Regex regex = new Regex(@"\d*");    //Регулярное выражение для поиска чисел
 
 
-        static void FlagChange()
+        static void FlagChange()        //Разрешает вызывать функцию получения ключа
         {
             Thread.Sleep(10000);
             flagChange = true;
         }
-        static async void FlagChangeAsync()
+        static async void FlagChangeAsync()      //Асинхронный вариант предыдущей функции
         {
             await Task.Run(() => FlagChange());
-        }
-        static void SendMessage(ref Socket socket, string message)
+        }   
+        static void SendMessage(ref Socket socket, string message)    //Отправка сообщения на серврер
         {
             Encoding encodingType = Encoding.GetEncoding("US-ASCII");
             Byte[] data = encodingType.GetBytes(message);
             socket.Send(data);
         }
-        static StringBuilder RecieveMessage(ref Socket socket)
+        static StringBuilder RecieveMessage(ref Socket socket)          //Получение сообщения от сервера
         {
             Byte[] data = new byte[256];
             StringBuilder builder = new StringBuilder();
@@ -56,11 +56,8 @@ namespace SocketTcpClient
             while (builder[builder.Length - 1] != '\n' && bytes > 0);
             return builder;
         }
-        static async void GetKeyAsync()
-        {
-            await Task.Run(() => GetKey());
-        }
-        static void GetKey()
+        
+        static void GetKey()        //Функция получения ключа
         {
             while (!flagKey)
             {
@@ -76,7 +73,7 @@ namespace SocketTcpClient
                     else
                     {
                         flagKey = true;
-                        FlagChangeAsync();
+                        FlagChangeAsync();          //Разрешаем с задержкой в 10с снова вызывать эту функцию
                     }
                     socket.Shutdown(SocketShutdown.Both);
                     socket.Close();
@@ -86,7 +83,7 @@ namespace SocketTcpClient
                     socket.Dispose();
                     flagChange = false;
                     flagKey = false;
-                    GetKeyAsync();
+                    GetKeyAsync();          
                     return;
                 }
                 finally {
@@ -94,7 +91,11 @@ namespace SocketTcpClient
                 }
             }
         }
-        static int ParseString(string response)
+        static async void GetKeyAsync()         //Асинхронный вариант предыдущей функции
+        {
+            await Task.Run(() => GetKey());
+        }
+        static int ParseString(string response)             //Парсим строку, пришедшую с сервера
         {
             int answer = 0;                              //Полученное число
             MatchCollection matches = regex.Matches(response);      //Набор успешных совпадений
@@ -104,8 +105,8 @@ namespace SocketTcpClient
                     if (match.Value != "") answer = int.Parse(match.Value);
             }
             return answer;
-        }    //Парсим строку, пришедшую с сервера
-        static void ServerAnswer(int number)
+        }    
+        static void GetServerAnswer(int number)                   //Получаем значения от сервера
         {
             while (!answerRecived[number-1])
             {
@@ -154,7 +155,7 @@ namespace SocketTcpClient
                 finally { socket.Dispose(); }
             }
         }
-        static void StartTasks(int leftBorder, int rightBorder) {
+        static void StartTasks(int leftBorder, int rightBorder) {           //Запускаем потоки
             for (int i = leftBorder + 1; i <= rightBorder; ++i)
             {
                 while (!flagKey)
@@ -165,7 +166,7 @@ namespace SocketTcpClient
                 ServerAnswerAsync(i);
             }
         }
-        static void WaitingForAllAnswers(int leftBorder, int rightBorder)
+        static void WaitingForAllAnswers(int leftBorder, int rightBorder)       //Отслеживаем получение ВСЕЙ информации
         {
             while (true)
             {
@@ -182,7 +183,7 @@ namespace SocketTcpClient
                 if (numberOfRequestsExecuted == rightBorder - leftBorder) break;
             }
         }
-        static void SendAnswer(double answer) {
+        static void SendAnswer(double answer) {             //Отправляем медиану на сервер
             Socket socket = null;
             try
             {
@@ -203,7 +204,7 @@ namespace SocketTcpClient
         }
         static async void ServerAnswerAsync(int number)
         {
-            await Task.Run(() => ServerAnswer(number));
+            await Task.Run(() => GetServerAnswer(number));
         }
 
         static void Main(string[] args)
